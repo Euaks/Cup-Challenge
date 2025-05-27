@@ -1,11 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jogo dos Copos - Desafio</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    
+  <div class="header">
+    <h1>Jogo dos Copos</h1>
+    <div class="phase-indicator">FASE 1</div>
+  </div>
+
+  <div class="game-container">
+    <div class="game-area">
+      <div class="cups-container">
+        <div class="cup" data-index="0">
+          <img src="img/red_cup.png" class="cup-img">
+          <img src="img/ball_red.png" class="ball hidden-ball">
+        </div>
+        <div class="cup" data-index="1">
+          <img src="img/red_cup.png" class="cup-img">
+          <img src="img/ball_red.png" class="ball hidden-ball">
+        </div>
+        <div class="cup" data-index="2">
+          <img src="img/red_cup.png" class="cup-img">
+          <img src="img/ball_red.png" class="ball hidden-ball">
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="start">JOGAR</button>
+        <button id="tutorial">Tutorial</button>
+      </div>
+
+      <div class="attempts">ID: player123 • Tentativas: 5</div>
+    </div>
+
+    <div class="leaderboard">
+      <h2>PLACAR</h2>
+      <ul class="leaderboard-list">
+        <li class="leaderboard-item">1- jdo_games</li>
+        <li class="leaderboard-item">2- elma_triz</li>
+        <li class="leaderboard-item">3- timoteo</li>
+        <li class="leaderboard-item">4- timo3'42'4'</li>
+        <li class="leaderboard-item">5- pedro_Santo</li>
+        <li class="leaderboard-item you">25- Você</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

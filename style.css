@@ -1,0 +1,227 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-image: url('img/fundo2.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #333;
+  }
+  
+  .header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .header h1 {
+    color: #2c3e50;
+    margin-bottom: 5px;
+  }
+  
+  .game-container {
+    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    gap: 30px;
+  }
+  
+  .game-area {
+    flex: 2;
+    background-color: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .leaderboard {
+    flex: 1;
+    background-color: #D9D9D9;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .leaderboard h2 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-top: 0;
+  }
+  
+  .phase-indicator {
+    background-color: #3498db;
+    color: white;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    display: inline-block;
+  }
+  
+  .cups-container {
+    position: relative;
+    height: 200px;
+    margin: 40px 0;
+  }
+  
+  .cup {
+    position: absolute;
+    width: 100px;
+    height: 150px;
+    bottom: 0;
+    transition: left 0.5s ease, transform 0.5s ease;
+    cursor: pointer;
+  }
+  
+  .cup[data-index="0"] { left: 0; }
+  .cup[data-index="1"] { left: 130px; }
+  .cup[data-index="2"] { left: 260px; }
+  
+  .cup-img {
+    width: 100%;
+    height: auto;
+    transition: transform 0.5s ease;
+  }
+  
+  .ball {
+    position: absolute;
+    width: 49px;
+    bottom: 68px;
+    left: 29px;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    opacity: 0;
+    transform: translateY(20px);
+    z-index: -1;
+  }
+  
+  /* Apenas a bola sem a classe hidden-ball será visível */
+  .ball:not(.hidden-ball) {
+    opacity: 1;
+    transform: translateY(0);
+    z-index: 1;
+  }
+  
+  .hidden-ball {
+    /* Propriedades movidas para .ball geral */
+  }
+  
+  .cup.lifted .cup-img {
+    transform: translateY(-30px);
+  }
+  
+  .cup.reveal .cup-img {
+    transform: translateY(-80px);
+  }
+  
+  /* Estilo para quando o jogador erra o copo */
+  .cup.wrong-choice {
+    filter: brightness(0.8);
+    border: 2px solid red;
+  }
+  
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+  }
+  
+  button {
+    padding: 10px 25px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: all 0.3s;
+  }
+  
+  #start {
+    background-color: #2FFF00;
+    color: white;
+  }
+  
+  #start:hover {
+    background-color: #27ae60;
+  }
+  
+  #start:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+  }
+  
+  #tutorial {
+    background-color: #3498db;
+    color: white;
+  }
+  
+  #tutorial:hover {
+    background-color: #2980b9;
+  }
+  
+  .leaderboard-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .leaderboard-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .leaderboard-item:nth-child(1) {
+    font-weight: bold;
+    color: #e67e22;
+  }
+  
+  .leaderboard-item:nth-child(2) {
+    font-weight: bold;
+    color: #95a5a6;
+  }
+  
+  .leaderboard-item:nth-child(3) {
+    font-weight: bold;
+    color: #d35400;
+  }
+  
+  .leaderboard-item.you {
+    background-color: #f1f9fe;
+    font-weight: bold;
+  }
+  
+  .attempts {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #7f8c8d;
+  }
+  
+  @media (max-width: 768px) {
+    .game-container {
+      flex-direction: column;
+    }
+    
+    .cups-container {
+      height: 150px;
+    }
+    
+    .cup {
+      width: 80px;
+      height: 120px;
+    }
+    
+    .cup[data-index="0"] { left: 10px; }
+    .cup[data-index="1"] { left: 100px; }
+    .cup[data-index="2"] { left: 190px; }
+    
+    .ball {
+      width: 35px;
+      bottom: 50px;
+      left: 22px;
+    }
+  }
