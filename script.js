@@ -10,13 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Configurações
   const CONFIG = {
-    INITIAL_SHUFFLE_DURATION: 8000, // mais lento
-    SHOW_DELAY: 2000,               // mais tempo para mostrar a bola
+    INITIAL_SHUFFLE_DURATION: 8000,
+    SHOW_DELAY: 2000,
     CUP_SPACING: 130,
-    REVEAL_DURATION: 3000,          // mais tempo para ver o resultado
+    REVEAL_DURATION: 3000,
     POINTS_PER_WIN: 5,
     POINTS_PER_LOSS: 2,
-    BASE_SHUFFLE_INTERVAL: 1200,    // mais lento
+    BASE_SHUFFLE_INTERVAL: 1200,
     PHASE_THRESHOLDS: [5, 10, 18, 28, 40, 55, 72, 91, 112, 135, 160, 187, 216, 247, 280]
   };
 
@@ -28,7 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let score = 0;
   let phase = 1;
   let consecutiveWins = 0;
-  let playerId = 'player' + Math.floor(Math.random() * 1000);
+
+  // Pega o nome do usuário logado ou "Você" se não houver
+  const usuarioLogado = localStorage.getItem('usuarioLogado') || "Você";
+  // Usa o mesmo playerId salvo no login
+  let playerId = localStorage.getItem('playerId') || 'player' + Math.floor(Math.random() * 1000);
+
   let currentShuffleDuration = CONFIG.INITIAL_SHUFFLE_DURATION;
   let currentShuffleInterval = CONFIG.BASE_SHUFFLE_INTERVAL;
 
@@ -48,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerExists = leaderboardData.some(player => player.id === playerId);
     if (!playerExists) {
       leaderboardData.push({ 
-        name: "você", 
+        name: usuarioLogado, 
         score: 0, 
         id: playerId,
         phase: 1
@@ -106,7 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateCupPositions() {
     cups.forEach((cup, i) => {
-      // Calcula a posição centralizada com espaçamento
       const position = (visualPositions[i] - 1) * CONFIG.CUP_SPACING;
       cup.style.transform = `translateX(calc(-50% + ${position}px))`;
     });
@@ -131,10 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setStartButtonState(false);
     resetCups();
 
-    // Progressão de dificuldade mais suave: reduz menos por fase
     let speedFactor = 1;
     if (phase > 10) {
-      speedFactor = 1 - ((phase - 10) * 0.05); // só começa a acelerar após a fase 10 e mais devagar
+      speedFactor = 1 - ((phase - 10) * 0.05);
     }
     const adjustedInterval = Math.max(100, currentShuffleInterval * speedFactor);
     const adjustedDuration = Math.max(2000, currentShuffleDuration * speedFactor);
@@ -172,8 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
       cups[physicalIndex].querySelector('.ball').classList.remove('hidden-ball');
       score += CONFIG.POINTS_PER_WIN;
       consecutiveWins++;
-      
-      // Aumenta a dificuldade após acertos consecutivos (mais suave)
       if (consecutiveWins % 5 === 0 && phase > 10) {
         currentShuffleDuration = Math.max(2000, currentShuffleDuration - 100);
         currentShuffleInterval = Math.max(100, currentShuffleInterval - 10);
@@ -187,7 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
       cups[physicalIndex].classList.add('wrong-choice');
       score = Math.max(0, score - CONFIG.POINTS_PER_LOSS);
       consecutiveWins = 0;
-      // Reseta parcialmente a dificuldade após erro
       currentShuffleDuration = Math.min(CONFIG.INITIAL_SHUFFLE_DURATION, currentShuffleDuration + 100);
       currentShuffleInterval = Math.min(CONFIG.BASE_SHUFFLE_INTERVAL, currentShuffleInterval + 20);
     }
@@ -206,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
       phase = newPhase;
       updatePhase();
 
-      // Progressão de dificuldade mais suave: só aumenta após fase 10 e menos agressivo
       if (phase > 10) {
         currentShuffleDuration = Math.max(2000, CONFIG.INITIAL_SHUFFLE_DURATION - ((phase - 10) * 300));
         currentShuffleInterval = Math.max(100, CONFIG.BASE_SHUFFLE_INTERVAL - ((phase - 10) * 40));
@@ -219,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updatePhase() {
     phaseIndicator.textContent = `FASE ${phase}`;
-    // Efeito visual ao mudar de fase
     phaseIndicator.style.transform = 'scale(1.2)';
     phaseIndicator.style.color = '#e67e22';
     setTimeout(() => {
@@ -229,18 +227,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updatePlayerScore() {
-    // Atualiza a pontuação do jogador no placar
     const playerIndex = leaderboardData.findIndex(player => player.id === playerId);
     if (playerIndex !== -1) {
       leaderboardData[playerIndex] = { 
-        name: "Você", 
+        name: usuarioLogado, 
         score: score, 
         id: playerId,
         phase: phase
       };
     }
 
-    // Ordena o placar
     leaderboardData.sort((a, b) => b.score - a.score || b.phase - a.phase);
     saveLeaderboard();
     updateLeaderboard();
@@ -253,8 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateLeaderboard() {
     leaderboardList.innerHTML = '';
-    
-    // Adiciona os itens do placar (mostra até 10)
     leaderboardData.slice(0, 10).forEach((player, index) => {
       const li = document.createElement('li');
       li.className = `leaderboard-item ${player.id === playerId ? 'you' : ''}`;
