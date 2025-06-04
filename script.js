@@ -144,3 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert("Tutorial:\n\n1. Clique em JOGAR para começar\n2. Observe onde a bola está\n3. Após o embaralhamento, clique no copo onde acha que está a bola\n4. Tente acertar o máximo possível!");
     }
   });
+  window.addEventListener("DOMContentLoaded", () => {
+    const nome = localStorage.getItem("usuarioLogado") || "Desconhecido";
+    document.getElementById("nomeJogador").textContent = nome;
+});

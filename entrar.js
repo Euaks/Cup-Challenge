@@ -10,12 +10,9 @@ document.getElementById("loginForm").addEventListener("submit", function (e) {
 
     if (usuarioValido) {
         alert("Login realizado com sucesso!");
-    
-    window.location.href = "jogo.html"; 
-
+        localStorage.setItem("usuarioLogado", usuario); // salvar para o jogo
+        window.location.href = "index.html";
     } else {
         alert("Usuário ou senha inválidos.");
     }
-    console.log("JavaScript carregado!");
-
 });
