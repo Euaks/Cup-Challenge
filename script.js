@@ -1,150 +1,281 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const cups = document.querySelectorAll('.cup');
-    const startBtn = document.getElementById('start');
-    const tutorialBtn = document.getElementById('tutorial');
-    const attemptsDisplay = document.querySelector('.attempts');
-    const yourScoreElement = document.querySelector('.leaderboard-item.you');
-  
-    // Configurações
-    const CONFIG = {
-      SHUFFLE_DURATION: 2000,
-      SHOW_DELAY: 1000,
-      CUP_SPACING: 130,
-      REVEAL_DURATION: 2000
-    };
-  
-    // Estado do jogo
-    let visualPositions = [0, 1, 2]; // Ordem visual dos copos
-    let ballPosition = 0;            // Posição real da bola
-    let clickable = false;           // Se os copos podem ser clicados
-    let attempts = 0;                // Número de tentativas
-    let score = 0;                   // Pontuação do jogador
-    let playerId = 'player' + Math.floor(Math.random() * 1000); // ID aleatório
-  
-    // Inicialização do jogo
-    initGame();
-  
-    function initGame() {
-      attemptsDisplay.textContent = `ID: ${playerId} • Tentativas: ${attempts}`;
-      setupEventListeners();
-      showBallBeforeShuffle();
-      setStartButtonState(true);
-    }
-  
-    function setupEventListeners() {
-      startBtn.addEventListener('click', startGame);
-      tutorialBtn.addEventListener('click', showTutorial);
-      
-      cups.forEach((cup, index) => {
-        cup.addEventListener('click', () => handleCupClick(index));
+  const cups = document.querySelectorAll('.cup');
+  const startBtn = document.getElementById('start');
+  const tutorialBtn = document.getElementById('tutorial');
+  const attemptsDisplay = document.querySelector('.attempts');
+  const phaseIndicator = document.querySelector('.phase-indicator');
+  const leaderboard = document.querySelector('.leaderboard');
+  const leaderboardToggle = document.querySelector('.leaderboard-toggle');
+  const leaderboardList = document.querySelector('.leaderboard-list');
+
+  // Configurações
+  const CONFIG = {
+    INITIAL_SHUFFLE_DURATION: 8000, // mais lento
+    SHOW_DELAY: 2000,               // mais tempo para mostrar a bola
+    CUP_SPACING: 130,
+    REVEAL_DURATION: 3000,          // mais tempo para ver o resultado
+    POINTS_PER_WIN: 5,
+    POINTS_PER_LOSS: 2,
+    BASE_SHUFFLE_INTERVAL: 1200,    // mais lento
+    PHASE_THRESHOLDS: [5, 10, 18, 28, 40, 55, 72, 91, 112, 135, 160, 187, 216, 247, 280]
+  };
+
+  // Estado do jogo
+  let visualPositions = [0, 1, 2];
+  let ballPosition = 0;
+  let clickable = false;
+  let attempts = 0;
+  let score = 0;
+  let phase = 1;
+  let consecutiveWins = 0;
+  let playerId = 'player' + Math.floor(Math.random() * 1000);
+  let currentShuffleDuration = CONFIG.INITIAL_SHUFFLE_DURATION;
+  let currentShuffleInterval = CONFIG.BASE_SHUFFLE_INTERVAL;
+
+  // Placar - carrega do localStorage ou usa dados iniciais
+  let leaderboardData = JSON.parse(localStorage.getItem('leaderboard')) || [
+    { name: "Mestre dos Copos", score: 42, id: "bot1", phase: 5 },
+    { name: "Olho de Águia", score: 35, id: "bot2", phase: 4 },
+    { name: "Adivinhador", score: 28, id: "bot3", phase: 3 },
+    { name: "Iniciante", score: 15, id: "bot4", phase: 2 }
+  ];
+
+  // Inicialização do jogo
+  initGame();
+
+  function initGame() {
+    // Adiciona o jogador ao placar se não existir
+    const playerExists = leaderboardData.some(player => player.id === playerId);
+    if (!playerExists) {
+      leaderboardData.push({ 
+        name: "você", 
+        score: 0, 
+        id: playerId,
+        phase: 1
       });
+      saveLeaderboard();
+    } else {
+      // Recupera os dados existentes do jogador
+      const player = leaderboardData.find(p => p.id === playerId);
+      score = player.score;
+      phase = player.phase;
     }
-  
-    function setStartButtonState(enabled) {
-      startBtn.disabled = !enabled;
-      startBtn.style.opacity = enabled ? '1' : '0.5';
+    
+    updatePhase();
+    updateAttemptsDisplay();
+    setupEventListeners();
+    showBallBeforeShuffle();
+    setStartButtonState(true);
+    updateLeaderboard();
+  }
+
+  function setupEventListeners() {
+    startBtn.addEventListener('click', startGame);
+    tutorialBtn.addEventListener('click', showTutorial);
+    leaderboardToggle.addEventListener('click', toggleLeaderboard);
+    
+    cups.forEach((cup, index) => {
+      cup.addEventListener('click', () => handleCupClick(index));
+    });
+  }
+
+  function toggleLeaderboard() {
+    leaderboard.classList.toggle('expanded');
+  }
+
+  function setStartButtonState(enabled) {
+    startBtn.disabled = !enabled;
+    startBtn.style.opacity = enabled ? '1' : '0.5';
+  }
+
+  function resetCups() {
+    cups.forEach(cup => {
+      cup.classList.remove('reveal', 'lifted', 'wrong-choice');
+      cup.querySelector('.ball').classList.add('hidden-ball');
+    });
+  }
+
+  function showBallBeforeShuffle() {
+    resetCups();
+    ballPosition = Math.floor(Math.random() * 3);
+    const cup = cups[ballPosition];
+    cup.classList.add('lifted');
+    cup.querySelector('.ball').classList.remove('hidden-ball');
+    updateCupPositions();
+  }
+
+  function updateCupPositions() {
+    cups.forEach((cup, i) => {
+      // Calcula a posição centralizada com espaçamento
+      const position = (visualPositions[i] - 1) * CONFIG.CUP_SPACING;
+      cup.style.transform = `translateX(calc(-50% + ${position}px))`;
+    });
+  }
+
+  function shuffleVisualPositions() {
+    for (let i = visualPositions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [visualPositions[i], visualPositions[j]] = [visualPositions[j], visualPositions[i]];
     }
-  
-    function resetCups() {
-      cups.forEach(cup => {
-        cup.classList.remove('reveal', 'lifted', 'wrong-choice');
-        cup.querySelector('.ball').classList.add('hidden-ball');
-        cup.style.left = '';
-      });
+  }
+
+  function startGame() {
+    showBallBeforeShuffle();
+    setTimeout(() => {
+      shuffleCups();
+    }, CONFIG.SHOW_DELAY);
+  }
+
+  function shuffleCups() {
+    clickable = false;
+    setStartButtonState(false);
+    resetCups();
+
+    // Progressão de dificuldade mais suave: reduz menos por fase
+    let speedFactor = 1;
+    if (phase > 10) {
+      speedFactor = 1 - ((phase - 10) * 0.05); // só começa a acelerar após a fase 10 e mais devagar
     }
-  
-    function showBallBeforeShuffle() {
-      resetCups();
-      ballPosition = Math.floor(Math.random() * 3);
-      const cup = cups[ballPosition];
-      cup.classList.add('lifted');
-      cup.querySelector('.ball').classList.remove('hidden-ball');
+    const adjustedInterval = Math.max(100, currentShuffleInterval * speedFactor);
+    const adjustedDuration = Math.max(2000, currentShuffleDuration * speedFactor);
+
+    const shuffleInterval = setInterval(() => {
+      shuffleVisualPositions();
       updateCupPositions();
-    }
-  
-    function updateCupPositions() {
-      cups.forEach((cup, i) => {
-        cup.style.left = `${visualPositions[i] * CONFIG.CUP_SPACING}px`;
-      });
-    }
-  
-    function shuffleVisualPositions() {
-      for (let i = visualPositions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [visualPositions[i], visualPositions[j]] = [visualPositions[j], visualPositions[i]];
+    }, adjustedInterval);
+
+    setTimeout(() => {
+      clearInterval(shuffleInterval);
+      clickable = true;
+      setStartButtonState(true);
+      attempts++;
+      updateAttemptsDisplay();
+    }, adjustedDuration);
+  }
+
+  function handleCupClick(physicalIndex) {
+    if (!clickable) return;
+    clickable = false;
+
+    const visualIndex = visualPositions[physicalIndex];
+    const isCorrect = visualIndex === ballPosition;
+
+    cups.forEach(cup => {
+      cup.querySelector('.ball').classList.add('hidden-ball');
+    });
+
+    cups.forEach(cup => {
+      cup.classList.add('reveal');
+    });
+
+    if (isCorrect) {
+      cups[physicalIndex].querySelector('.ball').classList.remove('hidden-ball');
+      score += CONFIG.POINTS_PER_WIN;
+      consecutiveWins++;
+      
+      // Aumenta a dificuldade após acertos consecutivos (mais suave)
+      if (consecutiveWins % 5 === 0 && phase > 10) {
+        currentShuffleDuration = Math.max(2000, currentShuffleDuration - 100);
+        currentShuffleInterval = Math.max(100, currentShuffleInterval - 10);
       }
-    }
-  
-    function startGame() {
-      showBallBeforeShuffle();
-      setTimeout(() => {
-        shuffleCups();
-      }, CONFIG.SHOW_DELAY);
-    }
-  
-    function shuffleCups() {
-      clickable = false;
-      setStartButtonState(false);
-      resetCups();
-  
-      const startTime = Date.now();
-      const shuffleInterval = setInterval(() => {
-        shuffleVisualPositions();
-        updateCupPositions();
-      }, 200);
-  
-      setTimeout(() => {
-        clearInterval(shuffleInterval);
-        clickable = true;
-        setStartButtonState(true);
-        attempts++;
-        attemptsDisplay.textContent = `ID: ${playerId} • Tentativas: ${attempts}`;
-      }, CONFIG.SHUFFLE_DURATION);
-    }
-  
-    function handleCupClick(physicalIndex) {
-      if (!clickable) return;
-      clickable = false;
-  
-      const visualIndex = visualPositions[physicalIndex];
-      const isCorrect = visualIndex === ballPosition;
-  
-      // Primeiro esconde TODAS as bolas
-      cups.forEach(cup => {
-        cup.querySelector('.ball').classList.add('hidden-ball');
+    } else {
+      cups.forEach((cup, idx) => {
+        if (visualPositions[idx] === ballPosition) {
+          cup.querySelector('.ball').classList.remove('hidden-ball');
+        }
       });
-  
-      // Levanta TODOS os copos
-      cups.forEach(cup => {
-        cup.classList.add('reveal');
-      });
-  
-      if (isCorrect) {
-        // Se acertou: mostra apenas a bola no copo clicado
-        cups[physicalIndex].querySelector('.ball').classList.remove('hidden-ball');
-        score++;
-        yourScoreElement.textContent = `25- Você (${score} pts)`;
+      cups[physicalIndex].classList.add('wrong-choice');
+      score = Math.max(0, score - CONFIG.POINTS_PER_LOSS);
+      consecutiveWins = 0;
+      // Reseta parcialmente a dificuldade após erro
+      currentShuffleDuration = Math.min(CONFIG.INITIAL_SHUFFLE_DURATION, currentShuffleDuration + 100);
+      currentShuffleInterval = Math.min(CONFIG.BASE_SHUFFLE_INTERVAL, currentShuffleInterval + 20);
+    }
+
+    checkPhaseProgress();
+    updatePlayerScore();
+    
+    setTimeout(() => {
+      startGame();
+    }, CONFIG.REVEAL_DURATION);
+  }
+
+  function checkPhaseProgress() {
+    const newPhase = CONFIG.PHASE_THRESHOLDS.findIndex(threshold => score < threshold) + 1;
+    if (newPhase !== phase) {
+      phase = newPhase;
+      updatePhase();
+
+      // Progressão de dificuldade mais suave: só aumenta após fase 10 e menos agressivo
+      if (phase > 10) {
+        currentShuffleDuration = Math.max(2000, CONFIG.INITIAL_SHUFFLE_DURATION - ((phase - 10) * 300));
+        currentShuffleInterval = Math.max(100, CONFIG.BASE_SHUFFLE_INTERVAL - ((phase - 10) * 40));
       } else {
-        // Se errou: mostra apenas a bola no copo correto
-        cups.forEach((cup, idx) => {
-          if (visualPositions[idx] === ballPosition) {
-            cup.querySelector('.ball').classList.remove('hidden-ball');
-          }
-        });
-        // Destaca o copo errado que foi clicado
-        cups[physicalIndex].classList.add('wrong-choice');
+        currentShuffleDuration = CONFIG.INITIAL_SHUFFLE_DURATION;
+        currentShuffleInterval = CONFIG.BASE_SHUFFLE_INTERVAL;
       }
-  
-      setTimeout(() => {
-        startGame();
-      }, CONFIG.REVEAL_DURATION);
     }
-  
-    function showTutorial() {
-      alert("Tutorial:\n\n1. Clique em JOGAR para começar\n2. Observe onde a bola está\n3. Após o embaralhamento, clique no copo onde acha que está a bola\n4. Tente acertar o máximo possível!");
+  }
+
+  function updatePhase() {
+    phaseIndicator.textContent = `FASE ${phase}`;
+    // Efeito visual ao mudar de fase
+    phaseIndicator.style.transform = 'scale(1.2)';
+    phaseIndicator.style.color = '#e67e22';
+    setTimeout(() => {
+      phaseIndicator.style.transform = 'scale(1)';
+      phaseIndicator.style.color = '';
+    }, 500);
+  }
+
+  function updatePlayerScore() {
+    // Atualiza a pontuação do jogador no placar
+    const playerIndex = leaderboardData.findIndex(player => player.id === playerId);
+    if (playerIndex !== -1) {
+      leaderboardData[playerIndex] = { 
+        name: "Você", 
+        score: score, 
+        id: playerId,
+        phase: phase
+      };
     }
   });
   window.addEventListener("DOMContentLoaded", () => {
     const nome = localStorage.getItem("usuarioLogado") || "Desconhecido";
     document.getElementById("nomeJogador").textContent = nome;
+});
+
+    // Ordena o placar
+    leaderboardData.sort((a, b) => b.score - a.score || b.phase - a.phase);
+    saveLeaderboard();
+    updateLeaderboard();
+    updateAttemptsDisplay();
+  }
+
+  function updateAttemptsDisplay() {
+    attemptsDisplay.textContent = `Tentativas: ${attempts} • Pontos: ${score}`;
+  }
+
+  function updateLeaderboard() {
+    leaderboardList.innerHTML = '';
+    
+    // Adiciona os itens do placar (mostra até 10)
+    leaderboardData.slice(0, 10).forEach((player, index) => {
+      const li = document.createElement('li');
+      li.className = `leaderboard-item ${player.id === playerId ? 'you' : ''}`;
+      li.innerHTML = `
+        <span>${index + 1}- ${player.name}</span>
+        <span>${player.score} pts</span>
+      `;
+      leaderboardList.appendChild(li);
+    });
+  }
+
+  function saveLeaderboard() {
+    localStorage.setItem('leaderboard', JSON.stringify(leaderboardData));
+  }
+
+  function showTutorial() {
+    alert(`Tutorial:\n\n1. Clique em JOGAR para começar\n2. Observe onde a bola está\n3. Após o embaralhamento, clique no copo onde acha que está a bola\n4. Cada acerto vale ${CONFIG.POINTS_PER_WIN} pontos\n5. Cada erro reduz ${CONFIG.POINTS_PER_LOSS} pontos\n6. A dificuldade aumenta conforme seus acertos\n7. Avance de fase marcando mais pontos\n8. Tente alcançar o topo do placar!`);
+  }
 });
