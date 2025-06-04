@@ -29,9 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let phase = 1;
   let consecutiveWins = 0;
 
-  // Pega o nome do usuário logado ou "Você" se não houver
   const usuarioLogado = localStorage.getItem('usuarioLogado') || "Você";
-  // Usa o mesmo playerId salvo no login
   let playerId = localStorage.getItem('playerId') || 'player' + Math.floor(Math.random() * 1000);
 
   let currentShuffleDuration = CONFIG.INITIAL_SHUFFLE_DURATION;
@@ -45,11 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
     { name: "Iniciante", score: 15, id: "bot4", phase: 2 }
   ];
 
-  // Inicialização do jogo
   initGame();
 
   function initGame() {
-    // Adiciona o jogador ao placar se não existir
+
     const playerExists = leaderboardData.some(player => player.id === playerId);
     if (!playerExists) {
       leaderboardData.push({ 
