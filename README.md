@@ -6,7 +6,7 @@ Jogo interativo feito com HTML, CSS e JS. Encontre a bolinha escondida após os 
 - HTML5
 - CSS3
 - JavaScript (ES6)
-- LocalStorage (usuário)
+- LocalStorage (usuário e placar)
 
 ## Autores
 
